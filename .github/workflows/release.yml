@@ -24,21 +24,34 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             wget curl squashfs-tools desktop-file-utils \
-            gtk-update-icon-cache
+            gtk-update-icon-cache fuse libfuse2
 
       - name: Build AppImage
         run: |
           chmod +x Grayjay-junest.sh
           ./Grayjay-junest.sh
+          echo "=== Files after build ==="
+          find . -type f -newer Grayjay-junest.sh | head -40
 
       - name: Find AppImage output
         id: find
         run: |
-          APPIMAGE=$(ls *.AppImage 2>/dev/null | head -1)
+          # Search recursively — the script may output to a subdir or use lowercase extension
+          APPIMAGE=$(find . -iname "*.AppImage" -type f -printf '%T@ %p\n' \
+            | sort -rn | head -1 | cut -d' ' -f2-)
+
           if [ -z "$APPIMAGE" ]; then
-            echo "ERROR: No .AppImage found" && exit 1
+            echo "ERROR: No .AppImage found anywhere in workspace"
+            echo "--- CWD: $(pwd) ---"
+            ls -la
+            echo "--- All files (excluding .git) ---"
+            find . -path ./.git -prune -o -type f -print | head -60
+            exit 1
           fi
-          # Rename to include the tag
+
+          echo "Found: $APPIMAGE"
+
+          # Move to repo root so the release action can reference it by bare filename
           NEWNAME="Grayjay-${TAG#v}-x86_64.AppImage"
           mv "$APPIMAGE" "$NEWNAME"
           echo "file=$NEWNAME" >> "$GITHUB_OUTPUT"
