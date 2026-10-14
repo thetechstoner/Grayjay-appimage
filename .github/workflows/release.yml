@@ -43,14 +43,12 @@ jobs:
 
       - name: Bootstrap Arch environment
         run: |
-          # Running as root inside the container — make sudo a no-op so
-          # recipe/JuNest calls to sudo don't fail or prompt.
           printf '#!/bin/sh\nexec "$@"\n' > /usr/local/bin/sudo
           chmod +x /usr/local/bin/sudo
 
           pacman -Syu --noconfirm --needed \
             base-devel git wget curl unzip squashfs-tools \
-            desktop-file-utils fuse2e fuse3 zsync fakeroot bubblewrap
+            desktop-file-utils fuse2 fuse3 zsync fakeroot bubblewrap
 
           haveged 2>/dev/null &
           pacman-key --init
