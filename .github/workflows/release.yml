@@ -1,0 +1,53 @@
+name: Build & Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v20.1)'
+        required: true
+        type: string
+
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            wget curl squashfs-tools desktop-file-utils \
+            gtk-update-icon-cache
+
+      - name: Build AppImage
+        run: |
+          chmod +x Grayjay-junest.sh
+          ./Grayjay-junest.sh
+
+      - name: Find AppImage output
+        id: find
+        run: |
+          APPIMAGE=$(ls *.AppImage 2>/dev/null | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "ERROR: No .AppImage found" && exit 1
+          fi
+          # Rename to include the tag
+          NEWNAME="Grayjay-${TAG#v}-x86_64.AppImage"
+          mv "$APPIMAGE" "$NEWNAME"
+          echo "file=$NEWNAME" >> "$GITHUB_OUTPUT"
+          echo "Built: $NEWNAME ($(du -h "$NEWNAME" | cut -f1))"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Grayjay ${{ env.TAG }}
+          files: ${{ steps.find.outputs.file }}
+          generate_release_notes: true
