@@ -10,33 +10,84 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write   # required by softprops/action-gh-release
+
 env:
   TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
 jobs:
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 60   # ArchImage builds exceed the 30 min default on cold caches
+
     steps:
       - uses: actions/checkout@v5
+
+      - name: Validate tag
+        env:
+          REF: ${{ github.ref }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [ "$REF" = "refs/tags/$TAG" ]; then
+            echo "Tag trigger OK: $TAG"
+          elif [ -n "$INPUT_TAG" ] && [ "$INPUT_TAG" = "$TAG" ]; then
+            echo "Dispatch input OK: $TAG"
+          else
+            echo "::error::No valid release tag (ref=$REF, input='$INPUT_TAG')"
+            exit 1
+          fi
 
       - name: Install dependencies
         run: |
           sudo apt-get update
+          # NOTE: do NOT install 'fuse' or 'libfuse2' on 24.04 — libfuse2 is now libfuse2t64,
+          # and the transitional 'fuse' package can break the runner image.
           sudo apt-get install -y --no-install-recommends \
-            wget curl squashfs-tools desktop-file-utils \
-            gtk-update-icon-cache fuse libfuse2
+            wget curl ca-certificates git unzip squashfs-tools \
+            desktop-file-utils libfuse2t64 zsync bubblewrap fakeroot
+
+      - name: Allow unprivileged user namespaces (JuNest/bwrap)
+        run: |
+          # sysctl knob (no-op where already enabled / not present)
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 2>/dev/null || true
+          # Ubuntu >=23.10 restricts unprivileged userns via AppArmor; add an
+          # unconfined profile so bwrap inside JuNest can create namespaces.
+          sudo mkdir -p /etc/apparmor.d/disable
+          sudo tee /etc/apparmor.d/disable/junest-userns >/dev/null <<'EOF'
+          abi <abi/4.0>,
+          include <tunables/global>
+          profile junest flags=(unconfined) {
+            userns,
+            include if exists <local/junest>
+          }
+          EOF
+          # Best-effort load; harmless if AppArmor rejects it here.
+          sudo apparmor_parser -r /etc/apparmor.d/disable/junest-userns 2>/dev/null || true
+          # Smoke test: fail early with a clear message instead of deep in Junest setup.
+          if ! bwrap --ro-bind / / --dev /dev true 2>/dev/null; then
+            echo "::warning::bwrap cannot create namespaces on this runner;"
+            echo "::warning::Junest will likely fall back to proot and AUR builds (grayjay-bin) will fail."
+            echo "::warning::Consider a self-hosted runner or an archlinux container job instead."
+          fi
+
+      - name: Fix silent wget failure in recipe
+        run: |
+          # Upstream uses '|| exit 0' after downloading archimage-builder.sh, which
+          # turns a network hiccup into a successful no-op build. Make it fatal.
+          sed -i 's|-O ./archimage-builder.sh || exit 0|-O ./archimage-builder.sh || exit 1|' Grayjay-junest.sh
+          grep -n 'exit 1' Grayjay-junest.sh | head -3
+          chmod +x Grayjay-junest.sh
 
       - name: Build AppImage
         run: |
-          chmod +x Grayjay-junest.sh
           ./Grayjay-junest.sh
           echo "=== Files after build ==="
-          find . -type f -newer Grayjay-junest.sh | head -40
+          find . -path ./.git -prune -o -type f -newer Grayjay-junest.sh -print | head -40
 
       - name: Find AppImage output
         id: find
         run: |
-          # Search recursively — the script may output to a subdir or use lowercase extension
           APPIMAGE=$(find . -iname "*.AppImage" -type f -printf '%T@ %p\n' \
             | sort -rn | head -1 | cut -d' ' -f2-)
 
@@ -44,17 +95,28 @@ jobs:
             echo "ERROR: No .AppImage found anywhere in workspace"
             echo "--- CWD: $(pwd) ---"
             ls -la
-            echo "--- All files (excluding .git) ---"
             find . -path ./.git -prune -o -type f -print | head -60
             exit 1
           fi
-
           echo "Found: $APPIMAGE"
 
-          # Move to repo root so the release action can reference it by bare filename
           NEWNAME="Grayjay-${TAG#v}-x86_64.AppImage"
           mv "$APPIMAGE" "$NEWNAME"
+
+          # The recipe passes -u "gh-releases-zsync|...", so appimagetool emits a
+          # matching .zsync delta file. Ship it or auto-update clients 404 forever.
+          ZSYNC="${APPIMAGE%.AppImage}.zsync"
+          EXTRA=""
+          if [ -f "$ZSYNC" ]; then
+            mv "$ZSYNC" "${NEWNAME}.zsync"
+            EXTRA="${NEWNAME}.zsync"
+            echo "Delta file: ${NEWNAME}.zsync"
+          else
+            echo "::warning::No .zsync produced; upstream auto-update metadata will be dead links."
+          fi
+
           echo "file=$NEWNAME" >> "$GITHUB_OUTPUT"
+          echo "file_zsync=$EXTRA" >> "$GITHUB_OUTPUT"
           echo "Built: $NEWNAME ($(du -h "$NEWNAME" | cut -f1))"
 
       - name: Create GitHub Release
@@ -62,5 +124,7 @@ jobs:
         with:
           tag_name: ${{ env.TAG }}
           name: Grayjay ${{ env.TAG }}
-          files: ${{ steps.find.outputs.file }}
+          files: |
+            ${{ steps.find.outputs.file }}
+            ${{ steps.find.outputs.file_zsync }}
           generate_release_notes: true
