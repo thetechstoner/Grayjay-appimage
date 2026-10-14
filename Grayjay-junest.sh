@@ -168,4 +168,4 @@ _appimagetool() {
 	fi
 }
 
-ARCH=x86_64 _appimagetool --runtime-file "$RUNTIME" -u "$UPINFO" AppDir "$APPNAME"_"$VERSION"-"$ARCHIMAGE_VERSION"-x64.AppImage
+ARCH=x86_64 _appimagetool --runtime-file "$RUNTIME" -u "$UPINFO" AppDir "$APPNAME"_"$VERSION"-x86_64.AppImage
