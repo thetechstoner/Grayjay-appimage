@@ -3,7 +3,7 @@
 APP=grayjay-bin
 BIN="grayjay"
 DEPENDENCES="at-spi2-core gtk3 libappindicator-gtk3 libnotify libsecret libxss libxtst nss unzip xdg-utils utils-git \
-alsa-lib libcups avahi mesa"
+alsa-lib libcups avahi mesa gettext"
 BASICSTUFF=""
 COMPILERS=""
 
