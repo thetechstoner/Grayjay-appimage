@@ -59,8 +59,8 @@ jobs:
         run: |
           # Upstream uses '|| exit 0' after downloading archimage-builder.sh, which
           # turns a network hiccup into a successful no-op build. Make it fatal.
-          sed -i 's|-O ./archimage-builder.sh || exit 0|-O ./archimage-builder.sh || exit 1|' Grayjay-junest.sh
-          grep -n 'exit 1' Grayjay-junest.sh | head -3
+          sed -i '/archimage-builder.sh/s/exit 0/exit 1/' Grayjay-junest.sh
+          grep -n 'archimage-builder' Grayjay-junest.sh
           chmod +x Grayjay-junest.sh
 
       - name: Build AppImage
