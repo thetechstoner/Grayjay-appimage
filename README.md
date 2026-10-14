@@ -51,4 +51,4 @@ chmod +x Grayjay-junest.sh
 > Installs `grayjay-bin` from the AUR via `yay`
 > Assembles the AppDir, prunes unnecessary files, and generates the `.desktop` entry
 > Packages everything into a Type 2 AppImage using `appimagetool`
-> The resulting file is named Grayjay_<version>-<archimage_version>-x64.AppImage
+> The resulting file is named Grayjay_<version>-x86_64.AppImage
