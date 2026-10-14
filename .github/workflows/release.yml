@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
 
-            - name: Bootstrap Arch environment
+      - name: Bootstrap Arch environment
         run: |
           # Running as root inside the container — make sudo a no-op so
           # recipe/JuNest calls to sudo don't fail or prompt.
