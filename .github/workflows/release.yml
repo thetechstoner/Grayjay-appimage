@@ -44,24 +44,28 @@ jobs:
           fi
 
       - name: Bootstrap Arch environment
+      - name: Bootstrap Arch environment
         run: |
-          printf '#!/bin/sh\nexec "$@"\n' > /usr/local/bin/sudo
-          chmod +x /usr/local/bin/sudo
-
           pacman -Syu --noconfirm --needed \
             base-devel git wget curl unzip squashfs-tools \
             desktop-file-utils fuse2 fuse3 zsync fakeroot bubblewrap \
             jq sudo haveged
+
+          # Remove fake sudo so real sudo takes over
+          rm -f /usr/local/bin/sudo
+          hash -r
 
           haveged 2>/dev/null &
           pacman-key --init
           pacman-key --populate archlinux
           wait 2>/dev/null || true
 
-          # Non-root build user — makepkg/yay refuse to run as root
           useradd -m -G wheel builder
           echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
           chown -R builder:builder "$GITHUB_WORKSPACE"
+
+          # Verify real sudo works
+          sudo -V
 
       - name: Fix silent wget failure in recipe
         run: |
