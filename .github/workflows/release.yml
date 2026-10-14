@@ -44,7 +44,6 @@ jobs:
           fi
 
       - name: Bootstrap Arch environment
-      - name: Bootstrap Arch environment
         run: |
           pacman -Syu --noconfirm --needed \
             base-devel git wget curl unzip squashfs-tools \
