@@ -18,8 +18,11 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60   # ArchImage builds exceed the 30 min default on cold caches
+    runs-on: ubuntu-24.04          # host stays Ubuntu; the *build* happens in Arch
+    timeout-minutes: 60            # cold-cache ArchImage builds exceed the 30 min default
+    container:
+      image: archlinux:latest
+      options: --privileged        # needed for pacman keyring init + namespaces
 
     steps:
       - uses: actions/checkout@v5
@@ -38,38 +41,22 @@ jobs:
             exit 1
           fi
 
-      - name: Install dependencies
+      - name: Bootstrap Arch environment
         run: |
-          sudo apt-get update
-          # NOTE: do NOT install 'fuse' or 'libfuse2' on 24.04 — libfuse2 is now libfuse2t64,
-          # and the transitional 'fuse' package can break the runner image.
-          sudo apt-get install -y --no-install-recommends \
-            wget curl ca-certificates git unzip squashfs-tools \
-            desktop-file-utils libfuse2t64 zsync bubblewrap fakeroot
+          # Running as root inside the container — make sudo a no-op so
+          # recipe/JuNest calls to sudo don't fail or prompt.
+          printf '#!/bin/sh\nexec "$@"\n' > /usr/local/bin/sudo
+          chmod +x /usr/local/bin/sudo
 
-      - name: Allow unprivileged user namespaces (JuNest/bwrap)
-        run: |
-          # sysctl knob (no-op where already enabled / not present)
-          sudo sysctl -w kernel.unprivileged_userns_clone=1 2>/dev/null || true
-          # Ubuntu >=23.10 restricts unprivileged userns via AppArmor; add an
-          # unconfined profile so bwrap inside JuNest can create namespaces.
-          sudo mkdir -p /etc/apparmor.d/disable
-          sudo tee /etc/apparmor.d/disable/junest-userns >/dev/null <<'EOF'
-          abi <abi/4.0>,
-          include <tunables/global>
-          profile junest flags=(unconfined) {
-            userns,
-            include if exists <local/junest>
-          }
-          EOF
-          # Best-effort load; harmless if AppArmor rejects it here.
-          sudo apparmor_parser -r /etc/apparmor.d/disable/junest-userns 2>/dev/null || true
-          # Smoke test: fail early with a clear message instead of deep in Junest setup.
-          if ! bwrap --ro-bind / / --dev /dev true 2>/dev/null; then
-            echo "::warning::bwrap cannot create namespaces on this runner;"
-            echo "::warning::Junest will likely fall back to proot and AUR builds (grayjay-bin) will fail."
-            echo "::warning::Consider a self-hosted runner or an archlinux container job instead."
-          fi
+          pacman -Syu --noconfirm --needed \
+            base-devel git wget curl unzip squashfs-tools \
+            desktop-file-utils libfuse2 fuse3 zsync fakeroot
+
+          # Pacman keyring needs entropy + initialized keys in a fresh container
+          haveged 2>/dev/null &
+          pacman-key --init
+          pacman-key --populate archlinux
+          wait 2>/dev/null || true
 
       - name: Fix silent wget failure in recipe
         run: |
