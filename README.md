@@ -42,9 +42,9 @@ Built on top of [JuNest](https://github.com/fsquillace/junest), a lightweight Ar
 git clone https://github.com/thetechstoner/Grayjay-appimage.git
 cd Grayjay-appimage
 # Make it executable
-chmod +x grayjay-junest.sh
+chmod +x Grayjay-junest.sh
 # Run the build script
-./grayjay-junest.sh
+./Grayjay-junest.sh
 ```
 >```
 > Downloads and sets up JuNest inside a temporary Arch Linux environment
