@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
 
-      - name: Bootstrap Arch environment
+            - name: Bootstrap Arch environment
         run: |
           # Running as root inside the container — make sudo a no-op so
           # recipe/JuNest calls to sudo don't fail or prompt.
@@ -50,9 +50,8 @@ jobs:
 
           pacman -Syu --noconfirm --needed \
             base-devel git wget curl unzip squashfs-tools \
-            desktop-file-utils libfuse2 fuse3 zsync fakeroot
+            desktop-file-utils fuse2e fuse3 zsync fakeroot bubblewrap
 
-          # Pacman keyring needs entropy + initialized keys in a fresh container
           haveged 2>/dev/null &
           pacman-key --init
           pacman-key --populate archlinux
