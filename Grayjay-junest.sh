@@ -2,8 +2,8 @@
 
 APP=grayjay-bin
 BIN="grayjay"
-DEPENDENCES="at-spi2-core gtk3 libappindicator-gtk3 libnotify libsecret libxss libxtst nss unzip xdg-utils utils-git \
-alsa-lib libcups avahi mesa gettext"
+DEPENDENCES="at-spi2-core gtk3 libappindicator libnotify libsecret libxss libxtst nss unzip xdg-utils xdg-utils-git \
+alsa-lib avahi mesa xkeyboard-config lm_sensors"
 BASICSTUFF=""
 COMPILERS=""
 
@@ -11,7 +11,7 @@ COMPILERS=""
 BINSAVED="grayjay"
 SHARESAVED="grayjay"
 # LIBSAVED is libraries to include in AppImage
-LIBSAVED="glib-2.0 gobject-2.0 gio-2.0 gmodule-2.0 ffi nspr4 nss3 nssutil3 smime3 plds4 plc4 gnutls p11-kit tasn1 idn2 unistring nettle hogweed gmp gcrypt gpg-error brotlienc brotlidec brotlicommon X11 Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xau Xdmcp Xi xcb xkbcommon wayland-server cairo pango freetype fontconfig pixman fribidi thai harfbuzz graphite2 datrie png16 expat asound udev systemd mount blkid cap gbm drm dbus-1 atk-1.0 atk-bridge-2.0 atspi cups avahi-common avahi-client z bz2 lz4 lzma zstd pcre2-8 stdc++ gcc_s icuuc icui18n icudata ssl crypto GL EGL GLX"
+LIBSAVED="glib-2.0 gobject-2.0 gio-2.0 gmodule-2.0 ffi nspr4 nss3 nssutil3 smime3 plds4 plc4 gnutls p11-kit tasn1 idn2 unistring nettle hogweed gmp gcrypt gpg-error brotlienc brotlidec brotlicommon X11 Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xau Xdmcp Xi xcb xkbcommon wayland-server cairo pango freetype fontconfig pixman fribidi thai harfbuzz graphite2 datrie png16 expat asound udev systemd mount blkid cap gbm drm dbus-1 atk-1.0 atk-bridge-2.0 atspi avahi-common avahi-client z bz2 lz4 lzma zstd pcre2-8 stdc++ gcc_s icuuc icui18n icudata ssl crypto GL EGL GLX"
 
 # Set the items you want to manually REMOVE.
 ETC_REMOVED="makepkg.conf pacman"
@@ -32,8 +32,8 @@ mkdir -p "$HOME/.local/share"
 if [ ! -d "$APP_DIR" ]; then
     cp -a /usr/share/grayjay "$APP_DIR"
 fi
-export GDK_BACKEND=x11
-cd "$APP_DIR" && exec ./Grayjay --ozone-platform=x11 --class=Grayjay --disable-gpu "$@"
+export GDK_BACKEND=wayland,x11,broadway,*
+cd "$APP_DIR" && exec ./Grayjay --ozone-platform-hint=wayland --class=Grayjay --use-gl=angle --use-angle=swiftshader --disable-gpu "$@"
 EOF
 chmod 755 AppDir/.junest/usr/bin/grayjay
 
@@ -106,6 +106,7 @@ Icon=grayjay
 Terminal=false
 Type=Application
 Categories=Network;Video;AudioVideo;
+StartupNotify=true
 StartupWMClass=Grayjay
 '
 echo "$DESKTOP_CONTENT" > "AppDir/$BIN.desktop"
@@ -168,4 +169,4 @@ _appimagetool() {
 	fi
 }
 
-ARCH=x86_64 _appimagetool --runtime-file "$RUNTIME" -u "$UPINFO" AppDir "$APPNAME"_"$VERSION"-x86_64.AppImage
+ARCH=x86_64 _appimagetool --runtime-file "$RUNTIME" -u "$UPINFO" AppDir "$APPNAME"_"$VERSION"-"$ARCHIMAGE_VERSION"-x86_64.AppImage
