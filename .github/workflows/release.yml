@@ -74,6 +74,9 @@ jobs:
           grep -n 'archimage-builder' Grayjay-junest.sh
           chmod +x Grayjay-junest.sh
 
+      - name: Disable bwrap fallback
+        run: rm -f /usr/bin/bwrap
+        
       - name: Build AppImage
         run: |
           sudo -u builder -H bash <<'BUILDSCRIPT'
