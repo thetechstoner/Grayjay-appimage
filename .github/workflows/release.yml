@@ -70,44 +70,31 @@ jobs:
           grep -n 'archimage-builder' Grayjay-junest.sh
           chmod +x Grayjay-junest.sh
 
-      # Pre-fetch the builder so we can patch it before use
-      - name: Fetch and harden archimage-builder.sh
+      - name: Install bwrap shim to auto-patch junest
         run: |
-          ARCHIMAGE_BUILDER="https://raw.githubusercontent.com/ivan-hc/ArchImage/refs/heads/main/core/archimage-builder.sh"
-          wget --retry-connrefused --tries=30 "$ARCHIMAGE_BUILDER" -O ./archimage-builder.sh
-          chmod +x ./archimage-builder.sh
-
-      # THE CRITICAL FIX: junest's own launcher uses bwrap -> uid map fails.
-      # Replace it with a plain chroot wrapper once the rootfs exists.
-      - name: Build AppImage
-        run: |
-          sudo -u builder -H bash <<'BUILDSCRIPT'
-            set -e
-            export APPIMAGE_EXTRACT_AND_RUN=1
-
-            cd /__w/Grayjay-appimage/Grayjay-appimage
-
-            # Run only the setup phase first to create the rootfs
-            source ./archimage-builder.sh junest-setup
-
-            JUNEST_BIN="$HOME/.local/share/junest/bin/junest"
-            if [ -f "$JUNEST_BIN" ]; then
-              cp "$JUNEST_BIN" "${JUNEST_BIN}.orig"
-              cat > "$JUNEST_BIN" <<'WRAP'
+          # Intercept the first bwrap call from junest and swap in a chroot wrapper
+          cat > /usr/local/bin/bwrap <<'SHIM'
           #!/bin/sh
           ROOT="$HOME/.local/share/junest"
+          JB="$ROOT/bin/junest"
+          if [ -f "$JB" ] && ! grep -q 'PATCHED-CHROOT' "$JB"; then
+              cp "$JB" "$JB.orig"
+              printf '#!/bin/sh\n# PATCHED-CHROOT\nexec chroot "%s" /bin/sh -c "$*"\n' "$ROOT" > "$JB"
+              chmod +x "$JB"
+              echo "[shim] Replaced junest launcher with plain chroot" >&2
+          fi
           exec chroot "$ROOT" /bin/sh -c "$*"
-          WRAP
-              chmod +x "$JUNEST_BIN"
-              echo "=== Patched junest launcher ==="
-              cat "$JUNEST_BIN"
-            else
-              echo "::warning::junest binary not found at $JUNEST_BIN"
-            fi
+          SHIM
+          chmod +x /usr/local/bin/bwrap
 
-            # Continue the rest of the build
+      - name: Build AppImage
+        run: |
+          sudo -u builder -H bash -c '
+            set -e
+            export APPIMAGE_EXTRACT_AND_RUN=1
+            cd /__w/Grayjay-appimage/Grayjay-appimage
             bash -x ./Grayjay-junest.sh 2>&1 | tee "$HOME/build.log"
-          BUILDSCRIPT
+          '
 
           echo "=== Last 80 lines of build log ==="
           tail -n 80 /home/builder/build.log || true
