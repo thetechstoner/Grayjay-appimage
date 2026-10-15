@@ -70,37 +70,30 @@ jobs:
           grep -n 'archimage-builder' Grayjay-junest.sh
           chmod +x Grayjay-junest.sh
 
-      # Pre-fetch builder so we can wrap it before junest is ever invoked
-      - name: Fetch and harden archimage-builder.sh
+      # Fetch the actual builder script so Grayjay-junest.sh can download it
+      - name: Pre-fetch archimage-builder.sh
         run: |
           ARCHIMAGE_BUILDER="https://raw.githubusercontent.com/ivan-hc/ArchImage/refs/heads/main/core/archimage-builder.sh"
           wget --retry-connrefused --tries=30 "$ARCHIMAGE_BUILDER" -O ./archimage-builder.sh
           chmod +x ./archimage-builder.sh
 
-      # THE FIX: Wrap archimage-builder.sh with a script that patches junest
-      # right after setup completes but before install starts.
-      - name: Install junest auto-patch wrapper
+      # THE FIX: Create a chroot-based junest wrapper BEFORE the build starts.
+      # Grayjay-junest.sh will create the real junest bin during junest-setup.
+      # We intercept it by replacing the binary right after it's created.
+      # But since we can't predict when that happens, we instead patch the
+      # archimage-builder to skip bwrap entirely by overriding _JUNEST_CMD.
+      - name: Override _JUNEST_CMD to use chroot
         run: |
-          mv ./archimage-builder.sh ./archimage-builder-real.sh
-          cat > ./archimage-builder.sh <<'WRAPPER'
-          #!/bin/bash
-          # Wrapper: after junest-setup, replace its bwrap launcher with plain chroot
-          source "$(dirname "$0")/archimage-builder-real.sh" "$@"
+          cat >> ./archimage-builder.sh <<'PATCH'
 
-          # Only patch once, after setup phase
-          if [ "$1" = "junest-setup" ]; then
-              JUNEST_BIN="$(find . -path '*/.local/share/junest/bin/junest' -type f 2>/dev/null | head -1)"
-              if [ -n "$JUNEST_BIN" ]; then
-                  cp "$JUNEST_BIN" "${JUNEST_BIN}.orig"
-                  printf '#!/bin/sh\n# PATCHED-CHROOT\nexec chroot "$(cd "$(dirname "$0")/../.." && pwd)" /bin/sh -c "$*"\n' > "$JUNEST_BIN"
-                  chmod +x "$JUNEST_BIN"
-                  echo "[wrapper] Patched junest at $JUNEST_BIN -> plain chroot" >&2
-              else
-                  echo "[wrapper] WARNING: junest binary not found" >&2
-              fi
-          fi
-          WRAPPER
-          chmod +x ./archimage-builder.sh
+          # --- OVERRIDDEN: use chroot instead of bwrap ---
+          _JUNEST_CMD() {
+              chroot "$HOME/.local/share/junest" /bin/sh -c "$@"
+          }
+          PATCH
+
+          echo "=== Patched archimage-builder.sh ==="
+          tail -10 ./archimage-builder.sh
 
       - name: Build AppImage
         run: |
