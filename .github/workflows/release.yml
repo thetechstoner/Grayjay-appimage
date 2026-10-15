@@ -74,23 +74,23 @@ jobs:
           grep -n 'archimage-builder' Grayjay-junest.sh
           chmod +x Grayjay-junest.sh
 
-      - name: Disable bwrap fallback
-        run: rm -f /usr/bin/bwrap
-        
+      - name: Disable bwrap
+        run: |
+          rm -f /usr/bin/bwrap
+          which bwrap || echo "bwrap removed successfully"
+
       - name: Build AppImage
         run: |
-          sudo -u builder -H bash <<'BUILDSCRIPT'
+          sudo -u builder -H bash -c '
             set -e
             export APPIMAGE_EXTRACT_AND_RUN=1
 
-            # Write junest config
             mkdir -p "$HOME/.config/junest"
-            printf 'capability:\n  - sys_admin\n  - net_admin\ndisable_userns: true\n' > "$HOME/.config/junest/config.yml"
+            printf "capability:\n  - sys_admin\n  - net_admin\ndisable_userns: true\n" > "$HOME/.config/junest/config.yml"
 
-            # Build inside the workspace (builder's HOME is /home/builder, not the repo)
             cd /__w/Grayjay-appimage/Grayjay-appimage
             bash -x ./Grayjay-junest.sh 2>&1 | tee "$HOME/build.log"
-          BUILDSCRIPT
+          '
 
           echo "=== Last 80 lines of build log ==="
           tail -n 80 /home/builder/build.log || true
