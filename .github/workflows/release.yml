@@ -15,15 +15,13 @@ permissions:
 
 env:
   TAG: ${{ github.event.inputs.tag || github.ref_name }}
-  APPIMAGE_EXTRACT_AND_RUN: "1"
-  JUNEST_OPTIONS: "--capability sys_admin --disable-userns"
 
 jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      APPIMAGE_EXTRACT_AND_RUN: "1"   # <-- Option 1: no FUSE needed
+      APPIMAGE_EXTRACT_AND_RUN: "1"
     container:
       image: archlinux:latest
       options: --privileged
@@ -52,7 +50,6 @@ jobs:
             desktop-file-utils fuse2 fuse3 zsync fakeroot bubblewrap \
             jq sudo haveged
 
-          # Remove fake sudo so real sudo takes over
           rm -f /usr/local/bin/sudo
           hash -r
 
@@ -65,7 +62,6 @@ jobs:
           echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
           chown -R builder:builder "$GITHUB_WORKSPACE"
 
-          # Verify real sudo works
           sudo -V
 
       - name: Fix silent wget failure in recipe
@@ -74,23 +70,44 @@ jobs:
           grep -n 'archimage-builder' Grayjay-junest.sh
           chmod +x Grayjay-junest.sh
 
-      - name: Disable bwrap
+      # Pre-fetch the builder so we can patch it before use
+      - name: Fetch and harden archimage-builder.sh
         run: |
-          rm -f /usr/bin/bwrap
-          which bwrap || echo "bwrap removed successfully"
+          ARCHIMAGE_BUILDER="https://raw.githubusercontent.com/ivan-hc/ArchImage/refs/heads/main/core/archimage-builder.sh"
+          wget --retry-connrefused --tries=30 "$ARCHIMAGE_BUILDER" -O ./archimage-builder.sh
+          chmod +x ./archimage-builder.sh
 
+      # THE CRITICAL FIX: junest's own launcher uses bwrap -> uid map fails.
+      # Replace it with a plain chroot wrapper once the rootfs exists.
       - name: Build AppImage
         run: |
-          sudo -u builder -H bash -c '
+          sudo -u builder -H bash <<'BUILDSCRIPT'
             set -e
             export APPIMAGE_EXTRACT_AND_RUN=1
 
-            mkdir -p "$HOME/.config/junest"
-            printf "capability:\n  - sys_admin\n  - net_admin\ndisable_userns: true\n" > "$HOME/.config/junest/config.yml"
-
             cd /__w/Grayjay-appimage/Grayjay-appimage
+
+            # Run only the setup phase first to create the rootfs
+            source ./archimage-builder.sh junest-setup
+
+            JUNEST_BIN="$HOME/.local/share/junest/bin/junest"
+            if [ -f "$JUNEST_BIN" ]; then
+              cp "$JUNEST_BIN" "${JUNEST_BIN}.orig"
+              cat > "$JUNEST_BIN" <<'WRAP'
+          #!/bin/sh
+          ROOT="$HOME/.local/share/junest"
+          exec chroot "$ROOT" /bin/sh -c "$*"
+          WRAP
+              chmod +x "$JUNEST_BIN"
+              echo "=== Patched junest launcher ==="
+              cat "$JUNEST_BIN"
+            else
+              echo "::warning::junest binary not found at $JUNEST_BIN"
+            fi
+
+            # Continue the rest of the build
             bash -x ./Grayjay-junest.sh 2>&1 | tee "$HOME/build.log"
-          '
+          BUILDSCRIPT
 
           echo "=== Last 80 lines of build log ==="
           tail -n 80 /home/builder/build.log || true
@@ -106,9 +123,7 @@ jobs:
 
           if [ -z "$APPIMAGE" ]; then
             echo "ERROR: No .AppImage found anywhere in workspace"
-            echo "--- CWD: $(pwd) ---"
             ls -la
-            find . -path ./.git -prune -o -type f -print | head -60
             exit 1
           fi
           echo "Found: $APPIMAGE"
@@ -121,14 +136,12 @@ jobs:
           if [ -f "$ZSYNC" ]; then
             mv "$ZSYNC" "${NEWNAME}.zsync"
             EXTRA="${NEWNAME}.zsync"
-            echo "Delta file: ${NEWNAME}.zsync"
           else
-            echo "::warning::No .zsync produced; upstream auto-update metadata will be dead links."
+            echo "::warning::No .zsync produced."
           fi
 
           echo "file=$NEWNAME" >> "$GITHUB_OUTPUT"
           echo "file_zsync=$EXTRA" >> "$GITHUB_OUTPUT"
-          echo "Built: $NEWNAME ($(du -h "$NEWNAME" | cut -f1))"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
