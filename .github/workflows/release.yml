@@ -89,12 +89,30 @@ jobs:
 
       - name: Build AppImage
         run: |
-          sudo -u builder -H bash -c '
+          sudo -u builder -H bash <<'BUILDSCRIPT'
             set -e
             export APPIMAGE_EXTRACT_AND_RUN=1
             cd /__w/Grayjay-appimage/Grayjay-appimage
+
+            # Phase 1: let the script clone + extract junest, then exit before install
+            timeout 300 bash ./Grayjay-junest.sh || true
+
+            # Patch junest to use chroot instead of bwrap
+            JUNEST_BIN="$HOME/.local/share/junest/bin/junest"
+            if [ -f "$JUNEST_BIN" ]; then
+              cp "$JUNEST_BIN" "${JUNEST_BIN}.orig"
+              printf '#!/bin/sh\n# PATCHED-CHROOT\nROOT="$HOME/.local/share/junest"\nexec chroot "$ROOT" /bin/sh -c "$*"\n' > "$JUNEST_BIN"
+              chmod +x "$JUNEST_BIN"
+              echo "=== Patched junest ==="
+              cat "$JUNEST_BIN"
+            else
+              echo "::error::junest binary missing at $JUNEST_BIN"
+              exit 1
+            fi
+
+            # Phase 2: re-run full build with patched junest
             bash -x ./Grayjay-junest.sh 2>&1 | tee "$HOME/build.log"
-          '
+          BUILDSCRIPT
 
           echo "=== Last 80 lines of build log ==="
           tail -n 80 /home/builder/build.log || true
