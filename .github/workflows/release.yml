@@ -76,23 +76,21 @@ jobs:
 
       - name: Build AppImage
         run: |
-          sudo -u builder -H bash <<'BUILD'
+          sudo -u builder -H bash <<'BUILDSCRIPT'
             set -e
             export APPIMAGE_EXTRACT_AND_RUN=1
 
-            # Force junest to skip user namespaces (blocked in GH Actions containers)
+            # Write junest config
             mkdir -p "$HOME/.config/junest"
-            cat > "$HOME/.config/junest/config.yml" <<'CFG'
-            capability:
-              - sys_admin
-              - net_admin
-            disable_userns: true
-            CFG
+            printf 'capability:\n  - sys_admin\n  - net_admin\ndisable_userns: true\n' > "$HOME/.config/junest/config.yml"
 
-            bash -x /__w/Grayjay-appimage/Grayjay-appimage/Grayjay-junest.sh 2>&1 | tee build.log
-          BUILD
-          echo "=== Last 80 lines ==="
-          tail -n 80 build.log
+            # Build inside the workspace (builder's HOME is /home/builder, not the repo)
+            cd /__w/Grayjay-appimage/Grayjay-appimage
+            bash -x ./Grayjay-junest.sh 2>&1 | tee "$HOME/build.log"
+          BUILDSCRIPT
+
+          echo "=== Last 80 lines of build log ==="
+          tail -n 80 /home/builder/build.log || true
           if ! find . -iname "*.AppImage" -type f | grep -q .; then
             echo "::error::Build produced no AppImage"; exit 1
           fi
