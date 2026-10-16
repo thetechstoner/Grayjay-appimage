@@ -30,17 +30,40 @@ mkdir -p "$HOME/.local/share"
 if [ ! -d "$APP_DIR" ]; then
     cp -a /usr/share/grayjay "$APP_DIR"
 fi
+
+export BOX64_DYNAREC_BIGBLOCK=3      # Aggressive block fusion (biggest single win)
+export BOX64_DYNAREC_XABS=1          # Use XABS for absolute addressing
+export BOX64_DYNAREC_FORWARD=1024    # Longer forward jumps
+export BOX64_DYNAREC_CALLRET=1       # Optimize call/return pairs
+export BOX64_DYNAREC_SAFEFLAGS=0     # Skip some flag preservation (safe for most apps)
+export BOX64_MAXCPU=4                # Limit visible cores (Chromium spawns per-core threads;too many wastes memory under emulation)
+export BOX64_X87DOUBLE=1             # Use double for x87 (faster, slight precision loss)
 export GDK_BACKEND=wayland,x11,broadway,*
-cd "$APP_DIR" && exec ./Grayjay \
---ozone-platform=x11 \
---enable-features=UseOzonePlatform \
---class=Grayjay \
---use-gl=angle \
---use-angle=swiftshader \
---disable-gpu \
-"$@"
+
+cd "$APP_DIR"
+if grep -q box64 /proc/self/maps 2>/dev/null; then
+    exec ./Grayjay \
+        --ozone-platform=x11 \
+        --enable-features=UseOzonePlatform \
+        --class=Grayjay \
+        --use-gl=angle \
+        --use-angle=swiftshader \
+        --disable-gpu --disable-gpu-compositing \
+        --no-sandbox \
+        --disable-dev-shm-usage \
+        "$@"
+else
+    exec ./Grayjay \
+        --ozone-platform=x11 \
+        --enable-features=UseOzonePlatform \
+        --class=Grayjay \
+        --no-sandbox \
+        --disable-dev-shm-usage \
+        "$@"
+fi
 EOF
 chmod 755 AppDir/.junest/usr/bin/grayjay
+
 # to update appimage unofficially uncomment
 #ZIP="Grayjay.Desktop-linux-x64.zip"
 #if [ ! -f "$ZIP" ]; then
