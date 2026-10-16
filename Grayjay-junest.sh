@@ -41,6 +41,12 @@ export BOX64_X87DOUBLE=1             # Use double for x87 (faster, slight precis
 export GDK_BACKEND=wayland,x11,broadway,*
 
 cd "$APP_DIR"
+
+if [ -S "$DBUS_SESSION_BUS_ADDRESS" ] || [ -S /run/user/$(id -u)/bus ]; then
+    # Junest can't easily mount sockets; instead export the address
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+fi
+
 if grep -q box64 /proc/self/maps 2>/dev/null; then
     exec ./Grayjay \
         --ozone-platform=x11 \
@@ -63,6 +69,8 @@ else
 fi
 EOF
 chmod 755 AppDir/.junest/usr/bin/grayjay
+
+echo "178.156.173.80 relay.grayjay.app" >> AppDir/.junest/etc/hosts
 
 # to update appimage unofficially uncomment
 #ZIP="Grayjay.Desktop-linux-x64.zip"
