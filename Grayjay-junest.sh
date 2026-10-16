@@ -2,8 +2,7 @@
 
 APP=grayjay-bin
 BIN="grayjay"
-DEPENDENCES="at-spi2-core gtk3 libappindicator libnotify libsecret libxss libxtst nss unzip xdg-utils xdg-utils-git \
-alsa-lib avahi mesa xkeyboard-config lm_sensors"
+DEPENDENCES="at-spi2-core gtk3 libappindicator libnotify libsecret libxss libxtst nss unzip xdg-utils xdg-utils-git alsa-lib mesa xkeyboard-config lm_sensors libxkbcommon kde-gtk-config openssl atk brotli cairo dbus expat avahi gmp fontconfig freetype2 gcc-libs glib2 graphite gnutls icu libcap libdatrie libdrm libffi libgcrypt libgpg-error liblz4 libidn2 libpng libtasn1 libthai libunistring libx11 libxcomposite libxdamage libxext libxfixes libxi libxrandr libxrender libxau libxdmcp libxcb nettle nspr p11-kit pango pcre2 pixman systemd util-linux wayland xz zlib bzip2 zstd"
 BASICSTUFF=""
 COMPILERS=""
 
@@ -11,8 +10,7 @@ COMPILERS=""
 BINSAVED="grayjay"
 SHARESAVED="grayjay"
 # LIBSAVED is libraries to include in AppImage
-LIBSAVED="glib-2.0 gobject-2.0 gio-2.0 gmodule-2.0 ffi nspr4 nss3 nssutil3 smime3 plds4 plc4 gnutls p11-kit tasn1 idn2 unistring nettle hogweed gmp gcrypt gpg-error brotlienc brotlidec brotlicommon X11 Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xau Xdmcp Xi xcb xkbcommon wayland-server cairo pango freetype fontconfig pixman fribidi thai harfbuzz graphite2 datrie png16 expat asound udev systemd mount blkid cap gbm drm dbus-1 atk-1.0 atk-bridge-2.0 atspi avahi-common avahi-client z bz2 lz4 lzma zstd pcre2-8 stdc++ gcc_s icuuc icui18n icudata ssl crypto GL EGL GLX"
-
+LIBSAVED="gtk-3 gdk-3 appindicator3-1 notify-4 Xss Xtst sensors secret-1 icuuc icui18n icudata ssl crypto GL EGL GLX colorreload-gtk-module window-decorations-gtk-mod atk-1.0 atk-bridge-2.0 atspi nspr4 nss3 nssutil3 smime3 plds4 plc4 glib-2.0 gobject-2.0 gio-2.0 gmodule-2.0 ffi gnutls p11-kit tasn1 idn2 unistring nettle hogweed gmp gcrypt gpg-error brotlienc brotlidec brotlicommon X11 Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xau Xdmcp Xi xcb xkbcommon wayland-server cairo pango freetype fontconfig pixman fribidi thai harfbuzz graphite2 datrie png16 expat asound udev systemd mount blkid cap gbm drm dbus-1 avahi-common avahi-client z bz2 lz4 lzma zstd pcre2-8 stdc++ gcc_s libxkbcommon-wayland libxkbcommon-x11 wayland-client xorg-xlib"
 # Set the items you want to manually REMOVE.
 ETC_REMOVED="makepkg.conf pacman"
 BIN_REMOVED="gcc"
@@ -33,7 +31,14 @@ if [ ! -d "$APP_DIR" ]; then
     cp -a /usr/share/grayjay "$APP_DIR"
 fi
 export GDK_BACKEND=wayland,x11,broadway,*
-cd "$APP_DIR" && exec ./Grayjay --ozone-platform-hint=wayland --class=Grayjay --use-gl=angle --use-angle=swiftshader --disable-gpu "$@"
+cd "$APP_DIR" && exec ./Grayjay \
+--ozone-platform=x11 \
+--enable-features=UseOzonePlatform \
+--class=Grayjay \
+--use-gl=angle \
+--use-angle=swiftshader \
+--disable-gpu \
+"$@"
 EOF
 chmod 755 AppDir/.junest/usr/bin/grayjay
 
