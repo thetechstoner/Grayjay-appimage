@@ -41,7 +41,6 @@ cd "$APP_DIR" && exec ./Grayjay \
 "$@"
 EOF
 chmod 755 AppDir/.junest/usr/bin/grayjay
-
 # to update appimage unofficially uncomment
 #ZIP="Grayjay.Desktop-linux-x64.zip"
 #if [ ! -f "$ZIP" ]; then
@@ -131,12 +130,43 @@ export NVIDIA_ON=0
 # AppRun footer
 cat <<-'HEREDOC' >> AppDir/AppRun
 
+# Install icon + desktop entry when AppImage lives in ~/Applications/
+if [ "$(dirname "$APPIMAGE")" = "$HOME/Applications" ]; then
+    ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
+    if [ ! -f "$ICON_DIR/grayjay.png" ]; then
+        mkdir -p "$ICON_DIR"
+        cp "${HERE}/grayjay.png" "$ICON_DIR/grayjay.png"
+        gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null
+        rm -f "$HOME/.cache/icon-cache.kcache"
+    fi
+
+    DESKTOP_FILE="$HOME/.local/share/applications/grayjay.desktop"
+    if [ ! -f "$DESKTOP_FILE" ]; then
+        mkdir -p "$HOME/.local/share/applications"
+        cat > "$DESKTOP_FILE" <<DEOF
+[Desktop Entry]
+Name=Grayjay
+Comment=Privacy-respecting client for YouTube, Rumble, Twitch, Spotify etc
+Exec=$APPIMAGE
+Icon=grayjay
+Terminal=false
+Type=Application
+Categories=Network;Video;AudioVideo;
+StartupNotify=true
+StartupWMClass=Grayjay
+DEOF
+        chmod +x "$DESKTOP_FILE"
+        update-desktop-database ~/.local/share/applications
+    fi
+fi
+
 EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2- | sed -e 's|%.||g')
 if ! echo "$EXEC" | grep -q "/usr/bin"; then EXEC="/usr/bin/$EXEC"; fi
 
 _JUNEST_CMD -- $EXEC "$@"
 
 HEREDOC
+
 chmod a+x AppDir/AppRun
 
 ##########################################################################################################################################################
