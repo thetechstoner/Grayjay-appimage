@@ -2,7 +2,7 @@
 
 APP=grayjay-bin
 BIN="grayjay"
-DEPENDENCES="at-spi2-core gtk3 libappindicator libnotify libsecret libxss libxtst nss unzip xdg-utils xdg-utils-git alsa-lib mesa xkeyboard-config lm_sensors libxkbcommon kde-gtk-config openssl atk brotli cairo dbus expat avahi gmp fontconfig freetype2 gcc-libs glib2 graphite gnutls icu libcap libdatrie libdrm libffi libgcrypt libgpg-error liblz4 libidn2 libpng libtasn1 libthai libunistring libx11 libxcomposite libxdamage libxext libxfixes libxi libxrandr libxrender libxau libxdmcp libxcb nettle nspr p11-kit pango pcre2 pixman systemd util-linux wayland xz zlib bzip2 zstd"
+DEPENDENCES="at-spi2-core gtk3 libappindicator libnotify libsecret libxss libxtst nss unzip xdg-utils alsa-lib mesa xkeyboard-config lm_sensors libxkbcommon kde-gtk-config openssl atk brotli cairo dbus expat avahi fontconfig freetype2 gcc-libs glib2 graphite icu libcap libdatrie libdrm libffi liblz4 libpng libthai libx11 libxcomposite libxdamage libxext libxfixes libxi libxrandr libxrender libxau libxdmcp libxcb nspr pango pcre2 pixman systemd wayland xz zlib bzip2 zstd"
 BASICSTUFF=""
 COMPILERS=""
 
@@ -10,7 +10,7 @@ COMPILERS=""
 BINSAVED="grayjay"
 SHARESAVED="grayjay"
 # LIBSAVED is libraries to include in AppImage
-LIBSAVED="gtk-3 gdk-3 appindicator3-1 notify-4 Xss Xtst sensors secret-1 icuuc icui18n icudata ssl crypto GL EGL GLX colorreload-gtk-module window-decorations-gtk-mod atk-1.0 atk-bridge-2.0 atspi nspr4 nss3 nssutil3 smime3 plds4 plc4 glib-2.0 gobject-2.0 gio-2.0 gmodule-2.0 ffi gnutls p11-kit tasn1 idn2 unistring nettle hogweed gmp gcrypt gpg-error brotlienc brotlidec brotlicommon X11 Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xau Xdmcp Xi xcb xkbcommon wayland-server cairo pango freetype fontconfig pixman fribidi thai harfbuzz graphite2 datrie png16 expat asound udev systemd mount blkid cap gbm drm dbus-1 avahi-common avahi-client z bz2 lz4 lzma zstd pcre2-8 stdc++ gcc_s libxkbcommon-wayland libxkbcommon-x11 wayland-client xorg-xlib"
+LIBSAVED="gtk-3 gdk-3 appindicator3-1 notify-4 Xss Xtst sensors secret-1 icuuc icui18n icudata ssl crypto GL EGL GLX colorreload-gtk-module window-decorations-gtk-mod atk-1.0 atk-bridge-2.0 atspi nspr4 nss3 nssutil3 smime3 softokn3 ssl3 freebl3 freeblpriv3 nsssysinit nssckbi plds4 plc4 X11 Xcomposite Xdamage avahi-common avahi-client ffi glib-2.0 gobject-2.0 gio-2.0 gmodule-2.0 stdc++ gcc_s brotlienc brotlidec brotlicommon Xext Xfixes Xrandr Xrender Xau Xdmcp Xi xcb xkbcommon wayland-client wayland-server cairo pango freetype fontconfig pixman fribidi thai harfbuzz graphite2 datrie png16 expat asound udev cap gbm drm dbus-1 z bz2 lz4 lzma zstd pcre2-8 libxkbcommon-wayland libxkbcommon-x11 xorg-xlib"
 # Set the items you want to manually REMOVE.
 ETC_REMOVED="makepkg.conf pacman"
 BIN_REMOVED="gcc"
@@ -31,14 +31,10 @@ if [ ! -d "$APP_DIR" ]; then
     cp -a /usr/share/grayjay "$APP_DIR"
 fi
 
-export BOX64_DYNAREC_BIGBLOCK=3      # Aggressive block fusion (biggest single win)
-export BOX64_DYNAREC_XABS=1          # Use XABS for absolute addressing
-export BOX64_DYNAREC_FORWARD=1024    # Longer forward jumps
-export BOX64_DYNAREC_CALLRET=1       # Optimize call/return pairs
-export BOX64_DYNAREC_SAFEFLAGS=0     # Skip some flag preservation (safe for most apps)
-export BOX64_MAXCPU=4                # Limit visible cores (Chromium spawns per-core threads;too many wastes memory under emulation)
-export BOX64_X87DOUBLE=1             # Use double for x87 (faster, slight precision loss)
-export GDK_BACKEND=wayland,x11,broadway,*
+export GDK_BACKEND=wayland,x11,broadway
+
+RELAY_IP=$(getent ahostsv4 relay.grayjay.app 2>/dev/null | head -1 | awk '{print $1}')
+[ -n "$RELAY_IP" ] && HOST_RULES="--host-resolver-rules=MAP relay.grayjay.app $RELAY_IP"
 
 cd "$APP_DIR"
 
@@ -48,6 +44,13 @@ if [ -S "$DBUS_SESSION_BUS_ADDRESS" ] || [ -S /run/user/$(id -u)/bus ]; then
 fi
 
 if grep -q box64 /proc/self/maps 2>/dev/null; then
+export BOX64_DYNAREC_BIGBLOCK=3      # Aggressive block fusion (biggest single win)
+export BOX64_DYNAREC_XABS=1          # Use XABS for absolute addressing
+export BOX64_DYNAREC_FORWARD=1024    # Longer forward jumps
+export BOX64_DYNAREC_CALLRET=1       # Optimize call/return pairs
+export BOX64_DYNAREC_SAFEFLAGS=0     # Skip some flag preservation (safe for most apps)
+export BOX64_MAXCPU=4                # Limit visible cores (Chromium spawns per-core threads;too many wastes memory under emulation)
+export BOX64_X87DOUBLE=1             # Use double for x87 (faster, slight precision loss)
     exec ./Grayjay \
         --ozone-platform=x11 \
         --enable-features=UseOzonePlatform \
@@ -57,20 +60,22 @@ if grep -q box64 /proc/self/maps 2>/dev/null; then
         --disable-gpu --disable-gpu-compositing \
         --no-sandbox \
         --disable-dev-shm-usage \
+        $HOST_RULES \
         "$@"
 else
     exec ./Grayjay \
         --ozone-platform=x11 \
         --enable-features=UseOzonePlatform \
         --class=Grayjay \
+        --use-gl=angle \
+        --use-angle=default \
         --no-sandbox \
         --disable-dev-shm-usage \
+        $HOST_RULES \
         "$@"
 fi
 EOF
 chmod 755 AppDir/.junest/usr/bin/grayjay
-
-echo "178.156.173.80 relay.grayjay.app" >> AppDir/.junest/etc/hosts
 
 # to update appimage unofficially uncomment
 #ZIP="Grayjay.Desktop-linux-x64.zip"
@@ -193,6 +198,17 @@ fi
 
 EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2- | sed -e 's|%.||g')
 if ! echo "$EXEC" | grep -q "/usr/bin"; then EXEC="/usr/bin/$EXEC"; fi
+
+JUNEST_GPU_ARGS="--bind /dev/dri /dev/dri --bind /usr/lib/dri /usr/lib/dri"
+
+if [ -e /dev/nvidia0 ]; then
+    JUNEST_GPU_ARGS="$JUNEST_GPU_ARGS --bind /dev/nvidia0 /dev/nvidia0 --bind /dev/nvidiactl /dev/nvidiactl --bind /dev/nvidia-modeset /dev/nvidia-modeset"
+    for lib in $(find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu -maxdepth 1 \( -name 'libnvidia*.so*' -o -name 'libcuda.so*' -o -name 'libnvcuvid.so*' -o -name 'libnvoptix.so*' \) 2>/dev/null); do
+        JUNEST_GPU_ARGS="$JUNEST_GPU_ARGS --bind $lib $lib"
+    done
+fi
+
+export JUNEST_ARGS="$JUNEST_GPU_ARGS"
 
 _JUNEST_CMD -- $EXEC "$@"
 
