@@ -10,7 +10,7 @@ COMPILERS=""
 BINSAVED="grayjay"
 SHARESAVED="grayjay"
 # LIBSAVED is libraries to include in AppImage
-LIBSAVED="linux-vdso ld-linux-x86-64 libgcrypt liblz4 libgpg-error libcap libc libgcc_s dri_gbm libcolorreload-gtk-module libwindow-decorations-gtk-module libacl libasound libatk-1.0 libatk-bridge-2.0 libatspi libavahi-client libavahi-common libblkid libbrotlicommon libbrotlidec libbrotlienc libbz2 libcairo-gobject libcairo libcloudproviders libcrypto libcups libdatrie libdbus-1 libdeflate libdl libdrm_amdgpu libdrm libelf libepoxy libexpat libffi libfontconfig libfreeblpriv3 libfreetype libfribidi libgallium libgbm libgdk-3 libgdk_pixbuf-2.0 libgio-2.0 libGLdispatch libglib-2.0 libGL libGLX_mesa libGLX libgmodule-2.0 libgmp libgnutls libgobject-2.0 libgraphite2 libgtk-3 libharfbuzz libhogweed libicudata libicui18n libicuuc libidn2 libjbig libjpeg libjson-glib-1.0 libleancrypto liblzma libmount libmpfr libm libncursesw libnettle libnspr4 libnss3 libnssckbi libnssutil3 libp11-kit libpango-1.0 libpangocairo-1.0 libpangoft2-1.0 libpcre2-8 libpixman-1 libplc4 libplds4 libpng16 libpthread libreadline librt libsensors libsharpyuv libsmime3 libsoftokn3 libSPIRV-Tools libsqlite3 libssl libstdc++ libsystemd libtasn1 libthai libtiff libtinysparql-3.0 libudev libunistring libwayland-client libwayland-cursor libwayland-egl libwayland-server libwebp libX11 libX11-xcb libXau libxcb-dri3 libxcb-glx libxcb-present libxcb-randr libxcb-render libxcb-shm libxcb libxcb-sync libxcb-xfixes libXcomposite libXcursor libXdamage libXdmcp libXext libXfixes libXinerama libXi libxkbcommon libxml2 libXrandr libXrender libxshmfence libXxf86vm libz libzstd"
+LIBSAVED="ld-linux-x86-64 libgcrypt liblz4 libgpg-error libcap libc libgcc_s dri_gbm libcolorreload-gtk-module libwindow-decorations-gtk-module libacl libasound libatk-1.0 libatk-bridge-2.0 libatspi libavahi-client libavahi-common libblkid libbrotlicommon libbrotlidec libbrotlienc libbz2 libcairo-gobject libcairo libcloudproviders libcrypto libcups libdatrie libdbus-1 libdeflate libdl libdrm_amdgpu libdrm libelf libepoxy libexpat libffi libfontconfig libfreeblpriv3 libfreetype libfribidi libgallium libgbm libgdk-3 libgdk_pixbuf-2.0 libgio-2.0 libGLdispatch libglib-2.0 libGL libGLX_mesa libGLX libgmodule-2.0 libgmp libgnutls libgobject-2.0 libgraphite2 libgtk-3 libharfbuzz libhogweed libicudata libicui18n libicuuc libidn2 libjbig libjpeg libjson-glib-1.0 libleancrypto liblzma libmount libmpfr libm libncursesw libnettle libnspr4 libnss3 libnssckbi libnssutil3 libp11-kit libpango-1.0 libpangocairo-1.0 libpangoft2-1.0 libpcre2-8 libpixman-1 libplc4 libplds4 libpng16 libpthread libreadline librt libsensors libsharpyuv libsmime3 libsoftokn3 libSPIRV-Tools libsqlite3 libssl libstdc++ libsystemd libtasn1 libthai libtiff libtinysparql-3.0 libudev libunistring libwayland-client libwayland-cursor libwayland-egl libwayland-server libwebp libX11 libX11-xcb libXau libxcb-dri3 libxcb-glx libxcb-present libxcb-randr libxcb-render libxcb-shm libxcb libxcb-sync libxcb-xfixes libXcomposite libXcursor libXdamage libXdmcp libXext libXfixes libXinerama libXi libxkbcommon libxml2 libXrandr libXrender libxshmfence libXxf86vm libz libzstd"
 # Set the items you want to manually REMOVE.
 ETC_REMOVED="makepkg.conf pacman"
 BIN_REMOVED="gcc"
@@ -25,7 +25,6 @@ mountpoint_dirs=""
 _post_installation_processes() {
 cat > AppDir/.junest/usr/bin/grayjay <<'EOF'
 #!/bin/sh
-APP_DIR="$HOME/.local/share/grayjay"
 mkdir -p "$HOME/.local/share"
 if [ ! -d "$APP_DIR" ]; then
     cp -a /usr/share/grayjay "$APP_DIR"
@@ -174,6 +173,9 @@ if [ -e /dev/nvidia0 ]; then
 fi
 export JUNEST_ARGS="$JUNEST_GPU_ARGS --bind /run/dbus /run/dbus"
 
+APP_DIR="$HOME/.local/share/grayjay"
+export APP_DIR
+
 # Set Arguments
 GRAYJAY_ARGS="--ozone-platform=x11 --enable-features=UseOzonePlatform --class=Grayjay --no-sandbox --disable-dev-shm-usage --disable-gpu-compositing --use-gl=angle"
 # box64 tuning (ARM → x86 emulation)
@@ -187,10 +189,11 @@ if grep -q box64 /proc/self/maps 2>/dev/null; then
     export BOX64_DYNAREC_SAFEFLAGS=0  # Skip some flag preservation (safe for most apps)
     export BOX64_X87DOUBLE=1          # Use double for x87 (faster, slight precision loss)
     #export BOX64_MMAP32=1             # Forces box64 to prefer 32-bit-compatible addresses for mmap calls from external libraries
-    export BOX64_LD_LIBRARY_PATH="$APPDIR/.junest/usr/lib:$APP_DIR"
+    export BOX64_LD_LIBRARY_PATH="$APP_DIR:$APP_DIR/cef:$APP_DIR/x86:$APP_DIR/x64:$APPDIR/.junest/usr/lib64:$APPDIR/.junest/lib64:$APPDIR/.junest/usr/lib:$AppDir/.junest/usr/lib/gtk-3.0/modules:$AppDir/.junest/usr/lib/cairo:$AppDir/.junest/usr/lib/gbm"
     GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=swiftshader --disable-gpu"
 else
     GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=default"
+    export LD_LIBRARY_PATH="$APP_DIR:$APP_DIR/cef:$APP_DIR/x86:$APP_DIR/x64:$APPDIR/.junest/usr/lib64:$APPDIR/.junest/lib64:$APPDIR/.junest/lib:$APPDIR/.junest/usr/lib:${LD_LIBRARY_PATH:-}"
 fi
 export GRAYJAY_ARGS
 
