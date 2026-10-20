@@ -2,7 +2,7 @@
 
 APP=grayjay-bin
 BIN="grayjay"
-DEPENDENCES="at-spi2-core gtk3 libappindicator libnotify libsecret libxss libxtst nss unzip xdg-utils alsa-lib mesa xkeyboard-config lm_sensors libxkbcommon kde-gtk-config openssl atk brotli cairo dbus expat avahi fontconfig freetype2 gcc-libs glib2 graphite icu libcap libdatrie libdrm libffi liblz4 libpng libthai libx11 libxcomposite libxdamage libxext libxfixes libxi libxrandr libxrender libxau libxdmcp libxcb nspr pango pcre2 pixman systemd wayland xz zlib bzip2 zstd"
+DEPENDENCES="acl alsa-lib at-spi2-core avahi brotli bzip2 cairo dbus expat fontconfig freetype2 fribidi gcc-libs gdk-pixbuf2 glib2 glibc gmp gnutls graphite gtk3 harfbuzz icu jbigkit json-glib kde-gtk-config leancrypto libcap libcloudproviders libcups libdatrie libdeflate libdrm libelf libepoxy libffi libglvnd libidn2 libjpeg-turbo libp11-kit libpng libtasn1 libthai libtiff libunistring libwebp libx11 libxau libxcb libxcomposite libxcursor libxdamage libxdmcp libxext libxfixes libxi libxinerama libxkbcommon libxml2 libxrandr libxrender libxshmfence libxxf86vm lm_sensors mesa mpfr ncurses nettle nspr nss openssl pango pcre2 pixman readline spirv-tools sqlite systemd-libs tinysparql util-linux-libs wayland xz zlib zstd"
 BASICSTUFF=""
 COMPILERS=""
 
@@ -10,7 +10,7 @@ COMPILERS=""
 BINSAVED="grayjay"
 SHARESAVED="grayjay"
 # LIBSAVED is libraries to include in AppImage
-LIBSAVED="gtk-3 gdk-3 appindicator3-1 notify-4 Xss Xtst sensors secret-1 icuuc icui18n icudata ssl crypto GL EGL GLX colorreload-gtk-module window-decorations-gtk-mod atk-1.0 atk-bridge-2.0 atspi nspr4 nss3 nssutil3 smime3 softokn3 ssl3 freebl3 freeblpriv3 nsssysinit nssckbi plds4 plc4 X11 Xcomposite Xdamage avahi-common avahi-client ffi glib-2.0 gobject-2.0 gio-2.0 gmodule-2.0 stdc++ gcc_s brotlienc brotlidec brotlicommon Xext Xfixes Xrandr Xrender Xau Xdmcp Xi xcb xkbcommon wayland-client wayland-server cairo pango freetype fontconfig pixman fribidi thai harfbuzz graphite2 datrie png16 expat asound udev cap gbm drm dbus-1 z bz2 lz4 lzma zstd pcre2-8 libxkbcommon-wayland libxkbcommon-x11 xorg-xlib"
+LIBSAVED="ld-linux-x86-64 libcap libc libgcc_s dri_gbm libcolorreload-gtk-module libwindow-decorations-gtk-module libacl libasound libatk-1.0 libatk-bridge-2.0 libatspi libavahi-client libavahi-common libblkid libbrotlicommon libbrotlidec libbrotlienc libbz2 libcairo-gobject libcairo libcloudproviders libcrypto libcups libdatrie libdbus-1 libdeflate libdl libdrm_amdgpu libdrm libelf libepoxy libexpat libffi libfontconfig libfreeblpriv3 libfreetype libfribidi libgallium libgbm libgdk-3 libgdk_pixbuf-2.0 libgio-2.0 libGLdispatch libglib-2.0 libGL libGLX_mesa libGLX libgmodule-2.0 libgmp libgnutls libgobject-2.0 libgraphite2 libgtk-3 libharfbuzz libhogweed libicudata libicui18n libicuuc libidn2 libjbig libjpeg libjson-glib-1.0 libleancrypto liblzma libmount libmpfr libm libncursesw libnettle libnspr4 libnss3 libnssckbi libnssutil3 libp11-kit libpango-1.0 libpangocairo-1.0 libpangoft2-1.0 libpcre2-8 libpixman-1 libplc4 libplds4 libpng16 libpthread libreadline librt libsensors libsharpyuv libsmime3 libsoftokn3 libSPIRV-Tools libsqlite3 libssl libstdc++ libsystemd libtasn1 libthai libtiff libtinysparql-3.0 libudev libunistring libwayland-client libwayland-cursor libwayland-egl libwebp libX11 libX11-xcb libXau libxcb-dri3 libxcb-glx libxcb-present libxcb-randr libxcb-render libxcb-shm libxcb libxcb-sync libxcb-xfixes libXcomposite libXcursor libXdamage libXdmcp libXext libXfixes libXinerama libXi libxkbcommon libxml2 libXrandr libXrender libxshmfence libXxf86vm libz libzstd"
 # Set the items you want to manually REMOVE.
 ETC_REMOVED="makepkg.conf pacman"
 BIN_REMOVED="gcc"
@@ -30,50 +30,8 @@ mkdir -p "$HOME/.local/share"
 if [ ! -d "$APP_DIR" ]; then
     cp -a /usr/share/grayjay "$APP_DIR"
 fi
-
-export GDK_BACKEND=wayland,x11,broadway
-
-RELAY_IP=$(getent ahostsv4 relay.grayjay.app 2>/dev/null | head -1 | awk '{print $1}')
-[ -n "$RELAY_IP" ] && HOST_RULES="--host-resolver-rules=MAP relay.grayjay.app $RELAY_IP"
-
 cd "$APP_DIR"
-
-if [ -S "$DBUS_SESSION_BUS_ADDRESS" ] || [ -S /run/user/$(id -u)/bus ]; then
-    # Junest can't easily mount sockets; instead export the address
-    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
-fi
-
-if grep -q box64 /proc/self/maps 2>/dev/null; then
-export BOX64_DYNAREC_BIGBLOCK=3      # Aggressive block fusion (biggest single win)
-export BOX64_DYNAREC_XABS=1          # Use XABS for absolute addressing
-export BOX64_DYNAREC_FORWARD=1024    # Longer forward jumps
-export BOX64_DYNAREC_CALLRET=1       # Optimize call/return pairs
-export BOX64_DYNAREC_SAFEFLAGS=0     # Skip some flag preservation (safe for most apps)
-export BOX64_MAXCPU=4                # Limit visible cores (Chromium spawns per-core threads;too many wastes memory under emulation)
-export BOX64_X87DOUBLE=1             # Use double for x87 (faster, slight precision loss)
-    exec ./Grayjay \
-        --ozone-platform=x11 \
-        --enable-features=UseOzonePlatform \
-        --class=Grayjay \
-        --use-gl=angle \
-        --use-angle=swiftshader \
-        --disable-gpu --disable-gpu-compositing \
-        --no-sandbox \
-        --disable-dev-shm-usage \
-        $HOST_RULES \
-        "$@"
-else
-    exec ./Grayjay \
-        --ozone-platform=x11 \
-        --enable-features=UseOzonePlatform \
-        --class=Grayjay \
-        --use-gl=angle \
-        --use-angle=default \
-        --no-sandbox \
-        --disable-dev-shm-usage \
-        $HOST_RULES \
-        "$@"
-fi
+exec ./Grayjay $GRAYJAY_ARGS "$GRAYJAY_HOST_RULES" "$@"
 EOF
 chmod 755 AppDir/.junest/usr/bin/grayjay
 
@@ -87,6 +45,7 @@ chmod 755 AppDir/.junest/usr/bin/grayjay
 #    unzip -q "$ZIP" -d AppDir/.junest/usr/share
 #    INNER=$(find AppDir/.junest/usr/share -maxdepth 1 -type d -name 'Grayjay.Desktop-linux-x64-v*' | head -1)
 #    mv "$INNER" AppDir/.junest/usr/share/grayjay
+
 }
 
 ##########################################################################################################################################################
@@ -150,16 +109,12 @@ StartupNotify=true
 StartupWMClass=Grayjay
 '
 echo "$DESKTOP_CONTENT" > "AppDir/$BIN.desktop"
-echo "$DESKTOP_CONTENT" > "AppDir/.junest/usr/share/applications/$BIN.desktop"
 
 ##########################################################################################################################################################
 #	APPRUN
 ##########################################################################################################################################################
 
 rm -f AppDir/AppRun
-
-# Set to "1" if you want to add Nvidia drivers manager in the AppRun
-export NVIDIA_ON=0
 
 [ -f ./archimage-builder.sh ] && source ./archimage-builder.sh apprun "$@"
 
@@ -195,20 +150,49 @@ DEOF
         update-desktop-database ~/.local/share/applications
     fi
 fi
-
 EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2- | sed -e 's|%.||g')
 if ! echo "$EXEC" | grep -q "/usr/bin"; then EXEC="/usr/bin/$EXEC"; fi
 
-JUNEST_GPU_ARGS="--bind /dev/dri /dev/dri --bind /usr/lib/dri /usr/lib/dri"
+# DNS pinning for relay
+RELAY_IP=$(getent ahostsv4 relay.grayjay.app 2>/dev/null | head -1 | awk '{print $1}')
+[ -n "$RELAY_IP" ] && export GRAYJAY_HOST_RULES="--host-resolver-rules=MAP relay.grayjay.app $RELAY_IP"
 
+# DBus session bus
+if [ -n "$DBUS_SESSION_BUS_ADDRESS" ] || [ -S /run/user/$(id -u)/bus ]; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+fi
+
+export GDK_BACKEND=wayland,x11,broadway
+
+# GPU detection
+JUNEST_GPU_ARGS="--bind /dev/dri /dev/dri --bind /usr/lib/dri /usr/lib/dri"
 if [ -e /dev/nvidia0 ]; then
     JUNEST_GPU_ARGS="$JUNEST_GPU_ARGS --bind /dev/nvidia0 /dev/nvidia0 --bind /dev/nvidiactl /dev/nvidiactl --bind /dev/nvidia-modeset /dev/nvidia-modeset"
     for lib in $(find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu -maxdepth 1 \( -name 'libnvidia*.so*' -o -name 'libcuda.so*' -o -name 'libnvcuvid.so*' -o -name 'libnvoptix.so*' \) 2>/dev/null); do
         JUNEST_GPU_ARGS="$JUNEST_GPU_ARGS --bind $lib $lib"
     done
 fi
+export JUNEST_ARGS="$JUNEST_GPU_ARGS --bind /run/dbus /run/dbus"
 
-export JUNEST_ARGS="$JUNEST_GPU_ARGS"
+# Set Arguments
+GRAYJAY_ARGS="--ozone-platform=x11 --enable-features=UseOzonePlatform --class=Grayjay --no-sandbox --disable-dev-shm-usage --disable-gpu-compositing --use-gl=angle"
+# box64 tuning (ARM → x86 emulation)
+if grep -q box64 /proc/self/maps 2>/dev/null; then
+    BOX64_MAXCPU="${BOX64_MAXCPU:-$(( $(nproc) > 8 ? 8 : $(nproc) ))}"
+    export BOX64_MAXCPU               # Limit visible cores (Chromium spawns per-core threads;too many wastes memory under emulation)
+    export BOX64_DYNAREC_BIGBLOCK=3   # Aggressive block fusion (biggest single win)
+    export BOX64_DYNAREC_XABS=1       # Use XABS for absolute addressing
+    export BOX64_DYNAREC_FORWARD=1024 # Longer forward jumps
+    export BOX64_DYNAREC_CALLRET=1    # Optimize call/return pairs
+    export BOX64_DYNAREC_SAFEFLAGS=0  # Skip some flag preservation (safe for most apps)
+    export BOX64_X87DOUBLE=1          # Use double for x87 (faster, slight precision loss)
+    #export BOX64_MMAP32=1             # Forces box64 to prefer 32-bit-compatible addresses for mmap calls from external libraries
+    export BOX64_LD_LIBRARY_PATH="$APPDIR/.junest/usr/lib:$APP_DIR"
+    GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=swiftshader"
+else
+    GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=default"
+fi
+export GRAYJAY_ARGS
 
 _JUNEST_CMD -- $EXEC "$@"
 
