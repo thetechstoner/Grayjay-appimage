@@ -188,7 +188,7 @@ if grep -q box64 /proc/self/maps 2>/dev/null; then
     export BOX64_X87DOUBLE=1          # Use double for x87 (faster, slight precision loss)
     #export BOX64_MMAP32=1             # Forces box64 to prefer 32-bit-compatible addresses for mmap calls from external libraries
     export BOX64_LD_LIBRARY_PATH="$APPDIR/.junest/usr/lib:$APP_DIR"
-    GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=swiftshader"
+    GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=swiftshader --disable-gpu"
 else
     GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=default"
 fi
