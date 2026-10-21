@@ -2,7 +2,8 @@
 
 APP=grayjay-bin
 BIN="grayjay"
-DEPENDENCES="acl alsa-lib at-spi2-core avahi brotli bzip2 cairo dbus expat fontconfig freetype2 fribidi gcc-libs gdk-pixbuf2 glib2 glibc gmp gnutls graphite gtk3 harfbuzz icu jbigkit json-glib kde-gtk-config leancrypto libcap libcloudproviders libcups libdatrie libdeflate libdrm libelf libepoxy libffi libglvnd libidn2 libjpeg-turbo libp11-kit libpng libtasn1 libthai libtiff libunistring libwebp libx11 libxau libxcb libxcomposite libxcursor libxdamage libxdmcp libxext libxfixes libxi libxinerama libxkbcommon libxml2 libxrandr libxrender libxshmfence libxxf86vm lm_sensors mesa mpfr ncurses nettle nspr nss openssl pango pcre2 pixman readline spirv-tools sqlite systemd-libs tinysparql util-linux-libs wayland xz zlib zstd libgcrypt libgpg-error lz4"
+# JuNest base system dependency used: glibc
+DEPENDENCES="acl alsa-lib at-spi2-core avahi brotli bzip2 cairo dbus expat fontconfig freetype2 fribidi gcc-libs gdk-pixbuf2 glib2 gmp gnutls graphite gtk3 harfbuzz icu jbigkit json-glib kde-gtk-config leancrypto libcap libcloudproviders libcups libdatrie libdeflate libdrm libelf libepoxy libffi libglvnd libidn2 libjpeg-turbo libp11-kit libpng libtasn1 libthai libtiff libunistring libwebp libx11 libxau libxcb libxcomposite libxcursor libxdamage libxdmcp libxext libxfixes libxi libxinerama libxkbcommon libxml2 libxrandr libxrender libxshmfence libxxf86vm lm_sensors mesa mpfr ncurses nettle nspr nss openssl pango pcre2 pixman readline spirv-tools sqlite systemd-libs tinysparql util-linux-libs wayland xz zlib zstd libgcrypt libgpg-error lz4"
 BASICSTUFF=""
 COMPILERS=""
 
@@ -10,7 +11,8 @@ COMPILERS=""
 BINSAVED="grayjay"
 SHARESAVED="grayjay"
 # LIBSAVED is libraries to include in AppImage
-LIBSAVED="ld-linux-x86-64 libgcrypt liblz4 libgpg-error libcap libc libgcc_s dri_gbm libcolorreload-gtk-module libwindow-decorations-gtk-module libacl libasound libatk-1.0 libatk-bridge-2.0 libatspi libavahi-client libavahi-common libblkid libbrotlicommon libbrotlidec libbrotlienc libbz2 libcairo-gobject libcairo libcloudproviders libcrypto libcups libdatrie libdbus-1 libdeflate libdl libdrm_amdgpu libdrm libelf libepoxy libexpat libffi libfontconfig libfreeblpriv3 libfreetype libfribidi libgallium libgbm libgdk-3 libgdk_pixbuf-2.0 libgio-2.0 libGLdispatch libglib-2.0 libGL libGLX_mesa libGLX libgmodule-2.0 libgmp libgnutls libgobject-2.0 libgraphite2 libgtk-3 libharfbuzz libhogweed libicudata libicui18n libicuuc libidn2 libjbig libjpeg libjson-glib-1.0 libleancrypto liblzma libmount libmpfr libm libncursesw libnettle libnspr4 libnss3 libnssckbi libnssutil3 libp11-kit libpango-1.0 libpangocairo-1.0 libpangoft2-1.0 libpcre2-8 libpixman-1 libplc4 libplds4 libpng16 libpthread libreadline librt libsensors libsharpyuv libsmime3 libsoftokn3 libSPIRV-Tools libsqlite3 libssl libstdc++ libsystemd libtasn1 libthai libtiff libtinysparql-3.0 libudev libunistring libwayland-client libwayland-cursor libwayland-egl libwayland-server libwebp libX11 libX11-xcb libXau libxcb-dri3 libxcb-glx libxcb-present libxcb-randr libxcb-render libxcb-shm libxcb libxcb-sync libxcb-xfixes libXcomposite libXcursor libXdamage libXdmcp libXext libXfixes libXinerama libXi libxkbcommon libxml2 libXrandr libXrender libxshmfence libXxf86vm libz libzstd"
+# JuNest base libraries used: ld-linux-x86-64, libc, libm, libdl, libpthread, librt
+LIBSAVED="libgcrypt liblz4 libgpg-error libcap libgcc_s dri_gbm libcolorreload-gtk-module libwindow-decorations-gtk-module libacl libasound libatk-1.0 libatk-bridge-2.0 libatspi libavahi-client libavahi-common libblkid libbrotlicommon libbrotlidec libbrotlienc libbz2 libcairo-gobject libcairo libcloudproviders libcrypto libcups libdatrie libdbus-1 libdeflate libdrm_amdgpu libdrm libelf libepoxy libexpat libffi libfontconfig libfreeblpriv3 libfreetype libfribidi libgallium libgbm libgdk-3 libgdk_pixbuf-2.0 libgio-2.0 libGLdispatch libglib-2.0 libGL libGLX_mesa libGLX libgmodule-2.0 libgmp libgnutls libgobject-2.0 libgraphite2 libgtk-3 libharfbuzz libhogweed libicudata libicui18n libicuuc libidn2 libjbig libjpeg libjson-glib-1.0 libleancrypto liblzma libmount libmpfr libncursesw libnettle libnspr4 libnss3 libnssckbi libnssutil3 libp11-kit libpango-1.0 libpangocairo-1.0 libpangoft2-1.0 libpcre2-8 libpixman-1 libplc4 libplds4 libpng16 libreadline libsensors libsharpyuv libsmime3 libsoftokn3 libSPIRV-Tools libsqlite3 libssl libstdc++ libsystemd libtasn1 libthai libtiff libtinysparql-3.0 libudev libunistring libwayland-client libwayland-cursor libwayland-egl libwayland-server libwebp libX11 libX11-xcb libXau libxcb-dri3 libxcb-glx libxcb-present libxcb-randr libxcb-render libxcb-shm libxcb libxcb-sync libxcb-xfixes libXcomposite libXcursor libXdamage libXdmcp libXext libXfixes libXinerama libXi libxkbcommon libxml2 libXrandr libXrender libxshmfence libXxf86vm libz libzstd"
 # Set the items you want to manually REMOVE.
 ETC_REMOVED="makepkg.conf pacman"
 BIN_REMOVED="gcc"
@@ -25,6 +27,7 @@ mountpoint_dirs=""
 _post_installation_processes() {
 cat > AppDir/.junest/usr/bin/grayjay <<'EOF'
 #!/bin/sh
+export LD_LIBRARY_PATH="$APP_DIR:$APP_DIR/cef:$APP_DIR/x86:$APP_DIR/x64:$LD_LIBRARY_PATH"
 mkdir -p "$HOME/.local/share"
 if [ ! -d "$APP_DIR" ]; then
     cp -a /usr/share/grayjay "$APP_DIR"
@@ -163,21 +166,16 @@ fi
 
 export GDK_BACKEND=wayland,x11,broadway
 
-# GPU detection
-JUNEST_GPU_ARGS="--bind /dev/dri /dev/dri --bind /usr/lib/dri /usr/lib/dri"
-if [ -e /dev/nvidia0 ]; then
-    JUNEST_GPU_ARGS="$JUNEST_GPU_ARGS --bind /dev/nvidia0 /dev/nvidia0 --bind /dev/nvidiactl /dev/nvidiactl --bind /dev/nvidia-modeset /dev/nvidia-modeset"
-    for lib in $(find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu -maxdepth 1 \( -name 'libnvidia*.so*' -o -name 'libcuda.so*' -o -name 'libnvcuvid.so*' -o -name 'libnvoptix.so*' \) 2>/dev/null); do
-        JUNEST_GPU_ARGS="$JUNEST_GPU_ARGS --bind $lib $lib"
-    done
-fi
-export JUNEST_ARGS="$JUNEST_GPU_ARGS --bind /run/dbus /run/dbus"
+JUNEST_ARGS="--bind /run/dbus /run/dbus"
+export JUNEST_ARGS
 
 APP_DIR="$HOME/.local/share/grayjay"
 export APP_DIR
 
 # Set Arguments
-GRAYJAY_ARGS="--ozone-platform=x11 --enable-features=UseOzonePlatform --class=Grayjay --no-sandbox --disable-dev-shm-usage --disable-gpu-compositing --use-gl=angle"
+GRAYJAY_ARGS="--ozone-platform=x11 --enable-features=UseOzonePlatform --class=Grayjay --no-sandbox --disable-dev-shm-usage --disable-features=DbusObjectManager --disable-gpu --disable-gpu-compositing"
+export GRAYJAY_ARGS
+
 # box64 tuning (ARM → x86 emulation)
 if grep -q box64 /proc/self/maps 2>/dev/null; then
     BOX64_MAXCPU="${BOX64_MAXCPU:-$(( $(nproc) > 8 ? 8 : $(nproc) ))}"
@@ -190,12 +188,7 @@ if grep -q box64 /proc/self/maps 2>/dev/null; then
     export BOX64_X87DOUBLE=1          # Use double for x87 (faster, slight precision loss)
     #export BOX64_MMAP32=1             # Forces box64 to prefer 32-bit-compatible addresses for mmap calls from external libraries
     export BOX64_LD_LIBRARY_PATH="$APP_DIR:$APP_DIR/cef:$APP_DIR/x86:$APP_DIR/x64:$APPDIR/.junest/usr/lib64:$APPDIR/.junest/lib64:$APPDIR/.junest/usr/lib:$AppDir/.junest/usr/lib/gtk-3.0/modules:$AppDir/.junest/usr/lib/cairo:$AppDir/.junest/usr/lib/gbm"
-    GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=swiftshader --disable-gpu"
-else
-    GRAYJAY_ARGS="$GRAYJAY_ARGS --use-angle=default"
-    export LD_LIBRARY_PATH="$APP_DIR:$APP_DIR/cef:$APP_DIR/x86:$APP_DIR/x64:$APPDIR/.junest/usr/lib64:$APPDIR/.junest/lib64:$APPDIR/.junest/lib:$APPDIR/.junest/usr/lib:${LD_LIBRARY_PATH:-}"
 fi
-export GRAYJAY_ARGS
 
 _JUNEST_CMD -- $EXEC "$@"
 
